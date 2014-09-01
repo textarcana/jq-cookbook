@@ -1,0 +1,13 @@
+# Emacs
+*~
+#*
+*#
+.#*
+
+#Mac OS
+.DS_Store
+
+# Project-specific files
+example.log
+log_lines.json
+severity_index.json
