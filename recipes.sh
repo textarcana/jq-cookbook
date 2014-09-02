@@ -322,7 +322,7 @@ jq \
 # and mobile applications expose their API data --- making a curl
 # request is just the tip of the iceberg! Other options include HAR
 # capture with Chrome Inspector, network traffic inspection via
-# Charles or WireShark and of course investigation of json documents
+# Charles or WireShark and  investigation of json documents
 # cached in your browser / filesystem.
 #
 # In any case, the larger point is that comparing JSON documents and
@@ -334,14 +334,14 @@ jq \
 # Just imagine for a moment that the two files we've created (and been
 # working with) are the results of two calls to different instances of
 # the same API: "foohost/v1/severity_index" and
-# "barhost/v1/severity_index" for the sake of pretending =D
+# "barhost/v2/severity_index" for the sake of pretending =D
 #
 # Anyhow, back to looking at the useful comparisons that jq can
 # perform against two JSON documents that (should) have commonalities
 # with regard to structure.
 #
 # The first snag one is likely to run into in data testing is... data
-# dependencies that result in fragile tests. Of course an API smoke
+# dependencies that result in fragile tests. An API smoke
 # test has to be dependent to some extent on the data returned (that's
 # the whole point). But it sucks to have to break the build because
 # someone updated the UI copy or because a cached query was
@@ -353,16 +353,26 @@ jq \
 #
 # Here's an example of how to "diff" the top-level keys in a JSON
 # document, ignoring the values of those keys.
+#
+# And just to be clear --- in a REAL test scenario I would first
+# actually retrieve the remote responses and save them to files before
+# performing the comparison:
+#
+#     curl foohost/v1/severity_index > severity_index.json
+#     curl barhost/v2/severity_index > advanced_comparison.json
+#
+# Then the two API responses are saved in two files, and I can compare
+# the two files as just I have been doing above:
 
 jq --slurp \
     '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique),
         added_keys: (([.[1][].severity]) - ([.[0][].severity]))}' \
     severity_index.json advanced_comparison.json
 
-# Now I can turn that into a test that causes Jenkins to fail the
+# And I can turn that into a test that causes Jenkins to fail the
 # build when the file being compared does not use all the same
-# top-level keys as the original file:
+# top-level keys as the original file.
 
 jq --slurp --exit-status \
-    '(([.[0][].severity]) - ([.[1][].severity]) | empty)' \
+    '[.[0][].severity] - [.[1][].severity] == [ ]' \
     severity_index.json advanced_comparison.json
