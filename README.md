@@ -16,6 +16,12 @@ How to use jq, [the command-line JSON processor.](http://stedolan.github.io/jq/)
 Avid readers may also wish to avail themselves of a
 [jsonlint](https://github.com/zaach/jsonlint) binary.
 
+I refer to
+[Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Meet+Jenkins)
+throughout, but you can mentally substitute the name of your own CI
+server and everything will work just the same. All the code here is
+entirely platform-independent.
+
 ## If you have not used *jq* before
 
 If you have not used *jq* before then this tutorial will annoy

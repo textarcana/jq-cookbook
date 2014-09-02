@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# jq Recipes
 #    _             _____              _
 #   (_)           |  __ \            (_)
 #    _   __ _     | |__) | ___   ___  _  _ __    ___  ___
@@ -12,7 +13,7 @@
 # I'm assuming you are following along on the command line as you read
 # this: typing or pasting each command in as you go, then taking a few
 # minutes to examine the output and/or the files created by the
-# commands you have run. I've included the output of every command for
+# commands you have run. I've included the output of some commands for
 # reference.
 #
 # The first thing that's needed in order to experiment with jq is ---
@@ -85,7 +86,12 @@ jsonlint -q log_lines.json
 # ALWAYS validates all JSON before attempting to print it out. JSON
 # that cannot be validated causes jq to print nothing and exit with an
 # error!
-#
+
+
+
+
+
+# Data Analysis
 #  _____        _                                  _           _
 # |  __ \      | |               /\               | |         (_)
 # | |  | | __ _| |_ __ _        /  \   _ __   __ _| |_   _ ___ _ ___
@@ -169,7 +175,12 @@ jq -r \
 #     1 [DEBUG]
 #     2 [ERROR]
 #     1 [INFO]
-#
+
+
+
+
+
+# diff for JSON
 #      _ _  __  __    __                  _  _____  ____  _   _
 #     | (_)/ _|/ _|  / _|                | |/ ____|/ __ \| \ | |
 #   __| |_| |_| |_  | |_ ___  _ __       | | (___ | |  | |  \| |
@@ -270,11 +281,88 @@ jq --slurp \
 # using your favorite text editor. It contains a JSON object with two
 # keys: "missing" and "added." Just like a diff!
 #
-# Now if I can easily report how many keys present in the original
+# Now I can easily report how many keys present in the original
 # index of log entries, were missing from the comparison file:
 
 jq \
     '.missing | length | "\(.) keys were not found."' \
     an_actual_diff.json
 
-# This should give you output like "2 keys were not found."
+# This should give you output like "2 keys were not found." Again,
+# this sort of output is perfect for echo'ing into a chatroom or
+# including in an automated notification email.
+
+
+
+
+# API Testing
+#           _____ _____   _______        _   _
+#     /\   |  __ \_   _| |__   __|      | | (_)
+#    /  \  | |__) || |      | | ___  ___| |_ _ _ __   __ _
+#   / /\ \ |  ___/ | |      | |/ _ \/ __| __| | '_ \ / _` |
+#  / ____ \| |    _| |_     | |  __/\__ \ |_| | | | | (_| |
+# /_/    \_\_|   |_____|    |_|\___||___/\__|_|_| |_|\__, |
+#                                                     __/ |
+#                                                    |___/
+#
+# Earlier I said that a jq expression with the --exit-status flag
+# enabled is sufficient to fail a Jenkins job if a JSON document
+# doesn't meet expectations.
+#
+# JSON documents come from all kinds of sources but typically when
+# someone says "API testing" they mean that they want to craft URLs
+# based on some existing, written RESTful API specification, then
+# retrieve JSON documents from a remote host by requesting those URLs
+# and downloading the (JSON) responses. As a final step, validation is
+# performed that demonstrates the JSON document returned by an API
+# query matches what one might expect based upon the API specifiation.
+#
+# Using curl to retrieve JSON responses is beyond the scope of this
+# article. But do consider that there are very many places where Web
+# and mobile applications expose their API data --- making a curl
+# request is just the tip of the iceberg! Other options include HAR
+# capture with Chrome Inspector, network traffic inspection via
+# Charles or WireShark and of course investigation of json documents
+# cached in your browser / filesystem.
+#
+# In any case, the larger point is that comparing JSON documents and
+# then failing the build is easy with jq!
+#
+# Now I will examine some common use cases that come up when testing
+# JSON documents retrieved from a remote API.
+#
+# Just imagine for a moment that the two files we've created (and been
+# working with) are the results of two calls to different instances of
+# the same API: "foohost/v1/severity_index" and
+# "barhost/v1/severity_index" for the sake of pretending =D
+#
+# Anyhow, back to looking at the useful comparisons that jq can
+# perform against two JSON documents that (should) have commonalities
+# with regard to structure.
+#
+# The first snag one is likely to run into in data testing is... data
+# dependencies that result in fragile tests. Of course an API smoke
+# test has to be dependent to some extent on the data returned (that's
+# the whole point). But it sucks to have to break the build because
+# someone updated the UI copy or because a cached query was
+# updated.
+#
+# Often I can attain a sufficient level of data independence by simply
+# validating that a JSON document has a top-level structure that
+# matches the API specification.
+#
+# Here's an example of how to "diff" the top-level keys in a JSON
+# document, ignoring the values of those keys.
+
+jq --slurp \
+    '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique),
+        added_keys: (([.[1][].severity]) - ([.[0][].severity]))}' \
+    severity_index.json advanced_comparison.json
+
+# Now I can turn that into a test that causes Jenkins to fail the
+# build when the file being compared does not use all the same
+# top-level keys as the original file:
+
+jq --slurp --exit-status \
+    '(([.[0][].severity]) - ([.[1][].severity]) | empty)' \
+    severity_index.json advanced_comparison.json
