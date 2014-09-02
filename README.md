@@ -16,9 +16,13 @@ How to use jq, [the command-line JSON processor.](http://stedolan.github.io/jq/)
 Avid readers may also wish to avail themselves of a
 [jsonlint](https://github.com/zaach/jsonlint) binary.
 
+## If you have not used *jq* before
+
 If you have not used *jq* before then this tutorial will annoy
-you. Please refer first to the examples and documentation found in the
-very fine [manual](http://stedolan.github.io/jq/manual/).
+you.
+
+Please refer first to the examples and documentation found in the very
+fine [manual](http://stedolan.github.io/jq/manual/).
 
 Or just type `man jq` at the prompt --- everything you need is
 documented <a href="http://infiniteundo.com/post/80891241176/how-to-read-a-manpage" >in the manpage</a>
