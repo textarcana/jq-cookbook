@@ -388,7 +388,7 @@ jq \
 
 jq --slurp \
     '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique),
-        added_keys: (([.[1][].severity]) - ([.[0][].severity]))}' \
+        added_keys: (([.[1][].severity]) - ([.[0][].severity]) | unique)}' \
     severity_index.json advanced_comparison.json
 
 # And I can turn that into a test that causes Jenkins to fail the
@@ -396,8 +396,8 @@ jq --slurp \
 # top-level keys as the original file.
 
 jq --slurp --exit-status \
-    '([.[0][].severity] | unique | sort) -
-     ([.[1][].severity] | unique | sort) == []' \
+    '([.[0][].severity] | unique) -
+     ([.[1][].severity] | unique) == []' \
     severity_index.json advanced_comparison.json
 
 
