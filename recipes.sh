@@ -279,12 +279,32 @@ jq --slurp \
     '{missing: (.[0] - .[1]), added: (.[1] - .[0])}' \
     severity_index.json advanced_comparison.json > an_actual_diff.json
 
-# Now I have created an_actual_diff.json which you should examine
-# using your favorite text editor. It contains a JSON object with two
-# keys: "missing" and "added." Just like a diff!
+# Now I have created a new file: an_actual_diff.json. It contains a
+# JSON object with two keys: "missing" and "added." Just like a diff!
 #
-# Now I can easily report how many keys present in the original
-# index of log entries, were missing from the comparison file:
+#    $ jq . an_actual_diff.json
+#    {
+#      "missing": [
+#        {
+#          "severity": "[ERROR]",
+#          "message": "bar"
+#        },
+#        {
+#          "severity": "[ERROR]",
+#          "message": "baz"
+#        }
+#      ],
+#      "added": [
+#        {
+#          "severity": "[DEBUG]",
+#          "message": "hello world!"
+#        }
+#      ]
+#    }
+#
+# Now I can easily create different reports. For instance I can easily
+# say how many keys present in the original file, were missing from
+# the comparison file:
 
 jq \
     '.missing | length | "\(.) keys were not found."' \
