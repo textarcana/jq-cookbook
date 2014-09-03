@@ -376,3 +376,67 @@ jq --slurp \
 jq --slurp --exit-status \
     '[.[0][].severity] - [.[1][].severity] == [ ]' \
     severity_index.json advanced_comparison.json
+
+
+
+
+# JSONp with jq
+#       _  _____  ____  _   _                  _ _   _         _
+#      | |/ ____|/ __ \| \ | |                (_) | | |       (_)
+#      | | (___ | |  | |  \| |_ __   __      ___| |_| |__      _  __ _
+#  _   | |\___ \| |  | | . ` | '_ \  \ \ /\ / / | __| '_ \    | |/ _` |
+# | |__| |____) | |__| | |\  | |_) |  \ V  V /| | |_| | | |   | | (_| |
+#  \____/|_____/ \____/|_| \_| .__/    \_/\_/ |_|\__|_| |_|   | |\__, |
+#                            | |                             _/ |   | |
+#                            |_|                            |__/    |_|
+#
+# In order to serve JSON documents to client-side JavaScript
+# applications, it is convenient to be able to transfer documents
+# between hosts on the Internet, outside the limitations imposed by
+# the Same-Origin Policy.
+#
+# JSONp is one such means for transferring JSON documents across
+# domains.
+#
+# The JSONp specification is quite simple. All I need to do to be
+# complient is to wrap a JSON document in a JavaScript function
+# call. The JavaScript function in turn must be defined on the client
+# side.
+#
+# On first encounter, JSONp can sound complex. But in practice a client side
+# implementation with jQuery looks like this:
+#
+#
+#    var response;
+#
+#    var jsonpHelper = function(data) {
+#        response = data;
+#    };
+#
+#    $.ajax({
+#        url: 'foohost/v1/severity_index',
+#        dataType: "jsonp",
+#        jsonp: false,
+#        jsonpCallback: 'jsonpHelper'
+#    });
+#
+# And that's it.
+#
+# Once this code executes in the browser, the "response" global
+# variable gets populated with data retreived from whatever JSONp file
+# was retrieved from the remote host.
+#
+# So this is a very convenient way to provide a JSON transaction
+# capability in the client, without necessarily changing any
+# configuration on the remote host.
+#
+# Here is how I would go about crafting a JSONp response whose payload
+# is the severity_index.json file I generated, above.
+
+jq --raw-output \
+    '"jsonpHelper(\(.));"' \
+    severity_index.json > jsonp_severity_index.json
+
+# Now I can serve the file jsonp_severity_index.json over http from
+# ANY host, and use the JavaScript code above to load it into ANY
+# client-side process running in the browser!

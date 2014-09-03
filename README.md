@@ -13,6 +13,10 @@ Noah Sussman's jq Cookbook
 
 How to use jq, [the command-line JSON processor.](http://stedolan.github.io/jq/)
 
+I provide some snippets of Client-Side JavaScript code to facilitate
+loading JSON documents into the browser. These snippets require [jQuery](http://api.jquery.com/)
+in order to run.
+
 Avid readers may also wish to avail themselves of a
 [jsonlint](https://github.com/zaach/jsonlint) binary.
 
