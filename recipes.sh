@@ -396,7 +396,8 @@ jq --slurp \
 # top-level keys as the original file.
 
 jq --slurp --exit-status \
-    '[.[0][].severity] - [.[1][].severity] == [ ]' \
+    '([.[0][].severity] | unique | sort) -
+     ([.[1][].severity] | unique | sort) == []' \
     severity_index.json advanced_comparison.json
 
 
@@ -445,8 +446,8 @@ jq --slurp --exit-status \
 #
 # Once this code executes in the browser, the "response" global
 # variable gets "hydrated" with all the data that was in the JSONp
-# file was retrieved from the remote host. This is a general solution
-# for cross-domain JSON transfer.
+# file from the remote host. This is a general solution for
+# cross-domain JSON transfer.
 #
 # So this is a very convenient way to provide a JSON transaction
 # capability in the client, without necessarily changing any
