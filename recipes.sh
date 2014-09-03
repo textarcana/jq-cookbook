@@ -255,8 +255,10 @@ jq --slurp --exit-status \
 # previously filtered out of the for_comparison.json document.
 #
 # In order to see the results of a diff, it would be best if the
-# for_comparison data set contained at least one unique key. So I will
-# add a new one:
+# for_comparison data set contained at least one entry that isn't in the
+# original document.
+#
+# Adding new entries to existing JSON documents works like this in jq:
 
 jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' \
     for_comparison.json > advanced_comparison.json
@@ -267,7 +269,7 @@ jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' \
 # for outputting JSON documents are too fast-and-loose for a tool like
 # diff which was designed for logfile and plain text analysis.
 #
-# Anyhow, an interesting capability of jq is the concurrent
+# An interesting capability of jq is the concurrent
 # application of multiple filters to the input stream while still
 # returning the output as a single JSON document. So if I want to
 # produce a third JSON document showing the difference between the two
@@ -315,7 +317,7 @@ jq \
 # retrieve JSON documents from a remote host by requesting those URLs
 # and downloading the (JSON) responses. As a final step, validation is
 # performed that demonstrates the JSON document returned by an API
-# query matches what one might expect based upon the API specifiation.
+# query matches what one might expect based upon the API specification.
 #
 # Using curl to retrieve JSON responses is beyond the scope of this
 # article. But do consider that there are very many places where Web
@@ -399,13 +401,12 @@ jq --slurp --exit-status \
 # domains.
 #
 # The JSONp specification is quite simple. All I need to do to be
-# complient is to wrap a JSON document in a JavaScript function
+# compliant is to wrap a JSON document in a JavaScript function
 # call. The JavaScript function in turn must be defined on the client
 # side.
 #
 # On first encounter, JSONp can sound complex. But in practice a client side
-# implementation with jQuery looks like this:
-#
+# JavaScript implementation with jQuery looks like this:
 #
 #    var response;
 #
@@ -415,7 +416,7 @@ jq --slurp --exit-status \
 #
 #    $.ajax({
 #        url: 'foohost/v1/severity_index',
-#        dataType: "jsonp",
+#        dataType: 'jsonp',
 #        jsonp: false,
 #        jsonpCallback: 'jsonpHelper'
 #    });
@@ -423,8 +424,9 @@ jq --slurp --exit-status \
 # And that's it.
 #
 # Once this code executes in the browser, the "response" global
-# variable gets populated with data retreived from whatever JSONp file
-# was retrieved from the remote host.
+# variable gets "hydrated" with all the data that was in the JSONp
+# file was retrieved from the remote host. This is a general solution
+# for cross-domain JSON transfer.
 #
 # So this is a very convenient way to provide a JSON transaction
 # capability in the client, without necessarily changing any
@@ -437,6 +439,25 @@ jq --raw-output \
     '"jsonpHelper(\(.));"' \
     severity_index.json > jsonp_severity_index.json
 
+# The newly generated file doesn't have any line breaks, but I can
+# format it with uglifyjs in order to visually check that I've got the
+# right data:
+#
+#    $ cat jsonp_severity_index.json | uglifyjs -b
+#    jsonpHelper([ {
+#        severity: "[DEBUG]",
+#        message: "foo"
+#    }, {
+#        severity: "[ERROR]",
+#        message: "bar"
+#    }, {
+#        severity: "[ERROR]",
+#        message: "baz"
+#    }, {
+#        severity: "[INFO]",
+#        message: "boz"
+#    } ]);
+#
 # Now I can serve the file jsonp_severity_index.json over http from
 # ANY host, and use the JavaScript code above to load it into ANY
 # client-side process running in the browser!

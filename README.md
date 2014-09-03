@@ -17,8 +17,13 @@ I provide some snippets of Client-Side JavaScript code to facilitate
 loading JSON documents into the browser. These snippets require [jQuery](http://api.jquery.com/)
 in order to run.
 
-Avid readers may also wish to avail themselves of a
-[jsonlint](https://github.com/zaach/jsonlint) binary.
+I use
+[uglifyjs](https://github.com/mishoo/UglifyJS2/blob/master/README.md)
+to format JavaScript. This is optional, you don't *need* `uglifys` in
+order to use the `jq` recipes.
+
+Avid readers may also wish to avail themselves of
+[jsonlint](https://github.com/zaach/jsonlint).
 
 I refer to
 [Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Meet+Jenkins)

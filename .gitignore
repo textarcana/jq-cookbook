@@ -13,6 +13,6 @@ an_actual_diff.json
 example.log
 for_comparison.json
 log_lines.json
-severity_index.json
+*severity_index.json
 totals.json
 totals.txt
