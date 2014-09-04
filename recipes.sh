@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # jq Recipes
 #    _             _____              _
 #   (_)           |  __ \            (_)
@@ -29,9 +31,13 @@ echo "[DEBUG] foo
 # That creates a file called example.log in your current working
 # directory.
 #
-# Use cat to verify the contents of example.log
+# Now you can use cat to verify the contents of example.log
+
+cat example.log
+
+# And you should see that example.log contains the following lines of
+# text:
 #
-#    $ cat example.log
 #    [DEBUG] foo
 #    [ERROR] bar
 #    [ERROR] baz
@@ -69,6 +75,24 @@ jq --slurp --raw-input --raw-output 'split("\n") | .' example.log > log_lines.js
 # you (the reader) are definitely working with the exact same data
 # set. This confidence in consistency is an invaluable advantage when
 # learning the fundamentals of a Turing-complete DSL like jq!
+#
+# Another thing to note is that I am using jq rather than cat to read
+# the contents of JSON files. cat simply reads text files to the
+# screen. Everything is plain text as far as cat is concerned -- cat
+# has no concept of JSON! So if you have invalid JSON for some reason,
+# cat will happily show it to you and never warn you about potential
+# problems.
+#
+# On the other hand, jq CAN NOT output invalid JSON. The output from
+# jq is always serialized directly into JSON from an object in memory.
+#
+# In other words: jq never "just prints" a JSON string. Rather, jq
+# ALWAYS validates all JSON before attempting to print it out. JSON
+# that cannot be validated causes jq to print nothing and exit with an
+# error!
+#
+# So just by using jq to print out my JSON, I am implicitly testing
+# that my JSON is valid!
 
 
 
