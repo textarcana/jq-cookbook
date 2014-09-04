@@ -400,7 +400,7 @@ jq '.missing | length | "\(.) keys were not found."' an_actual_diff.json
 #     curl barhost/v2/severity_index > advanced_comparison.json
 #
 # Then the two API responses are saved in two files, and I can compare
-# the two files as just I have been doing above
+# the two files as just I have been doing above.
 #
 # Now back to looking at the useful comparisons that jq can perform
 # against two JSON documents that (should) have commonalities with
