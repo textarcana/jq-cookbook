@@ -62,7 +62,12 @@ jq --slurp --raw-input --raw-output 'split("\n") | .' example.log > log_lines.js
 # same information as our original log, but formatted as a JSON array
 # ready for loading into ANY programmatic environment.
 #
-#    $ jq . log_lines.json
+# Now when I take a look a the newly generated JSON file:
+
+jq . log_lines.json
+
+# I see that it contains a JSON array like this:
+#
 #    [
 #      "[DEBUG] foo",
 #      "[ERROR] bar",
@@ -120,7 +125,13 @@ jq 'map(split(" ") | {severity: "\(.[0])", message: "\(.[1])"})' log_lines.json 
 # I've now created a new file: severity_index.json, which contains an
 # array of hashes. Each hash has two keys: severity and message.
 #
-#     $ jq . severity_index.json
+# When I view my newly created index file:
+
+jq . severity_index.json
+
+# Then I see that it contains an array of JSON records; representing
+# the original log lines as structured data:
+#
 #     [
 #       {
 #         "severity": "[DEBUG]",
@@ -145,11 +156,13 @@ jq 'map(split(" ") | {severity: "\(.[0])", message: "\(.[1])"})' log_lines.json 
 
 jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' severity_index.json > totals.json
 
-# Now the output at this point is JSON but I could be terser if I just
-# wanted human-readable output. jq provides a LOT of control over
-# output formats!
+# When I view the newly generated index of total messages by severity:
+
+jq . totals.json
+
+# Then I can see that it's again an array of JSON records; this time
+# providing a lookup table of total message counts:
 #
-#     $ jq . totals.json
 #     [
 #       {
 #         "[DEBUG]": 1
@@ -162,6 +175,9 @@ jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' severity_index.jso
 #       }
 #     ]
 #
+# Now the output at this point is JSON but I could be terser if I just
+# wanted human-readable output. jq provides a LOT of control over
+# output formats!
 #
 # Here's the same query against severity_index.json, but formatted as
 # human-readable plain text. Note I've moved the numbers to the left
@@ -171,10 +187,14 @@ jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' severity_index.jso
 
 jq -r 'group_by(.severity) | map("\(length) \(.[0].severity)") | .[]' severity_index.json > totals.txt
 
-# Note that totals.txt is suitable for including in an email or
-# echo'ing into an IRC chat room.
+# I'll use cat to view the generated file this time, because now I'm
+# dealing with plain text and not JSON:
+
+cat totals.txt
+
+# And I can see that totals.txt is suitable for including in an email
+# or echo'ing into an IRC chat room!
 #
-#     $ cat totals.txt
 #     1 [DEBUG]
 #     2 [ERROR]
 #     1 [INFO]
@@ -216,10 +236,14 @@ jq 'map(select(.severity != "[ERROR]")) | sort' severity_index.json > for_compar
 # that using the diff command isn't that useful when dealing with JSON
 # data sets.
 #
-# Anyway, here is the file I will be using for comparison with my
-# existing severity_index.json data set:
+# When I view the file I will be using for comparison with my existing
+# severity_index.json data set:
+
+
+jq . for_comparison.json
+
+# Then I can see that I'm dealing with an array of two records.
 #
-#     $ jq . for_comparison.json
 #     [
 #       {
 #         "severity": "[DEBUG]",
@@ -247,16 +271,30 @@ jq --slurp --exit-status '.[0] == .[1]' severity_index.json for_comparison.json
 # I can figure out which keys are in the first document but not in the
 # second document by using the subtraction operator:
 
-jq --slurp --exit-status '.[0] - .[1]' severity_index.json for_comparison.json
+jq --slurp '.[0] - .[1]' severity_index.json for_comparison.json
 
 # This lists out only the error keys, since those are the keys that I
-# previously filtered out of the for_comparison.json document.
+# previously filtered out of the for_comparison.json document:
 #
-# In order to see the results of a diff, it would be best if the
-# for_comparison data set contained at least one entry that isn't in the
-# original document.
+#    [
+#      {
+#        "severity": "[ERROR]",
+#        "message": "bar"
+#      },
+#      {
+#        "severity": "[ERROR]",
+#        "message": "baz"
+#      }
+#    ]
 #
-# Adding new entries to existing JSON documents works like this in jq:
+# Now I'll set up my data files so that I can try a slightly more complex diff.
+#
+# I want to see the diff "go in both directions" so to speak --- that
+# is, I want to see what happens when BOTH documents contain at least
+# one key/value pair that isn't in the other document.
+#
+# This means I need to generate some test data.  Adding new entries to
+# existing JSON documents works like this in jq:
 
 jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' for_comparison.json > advanced_comparison.json
 
@@ -276,8 +314,11 @@ jq --slurp '{missing: (.[0] - .[1]), added: (.[1] - .[0])}' severity_index.json 
 
 # Now I have created a new file: an_actual_diff.json. It contains a
 # JSON object with two keys: "missing" and "added." Just like a diff!
+
+jq . an_actual_diff.json
+
+# And the output should look like:
 #
-#    $ jq . an_actual_diff.json
 #    {
 #      "missing": [
 #        {
@@ -446,11 +487,20 @@ jq --slurp --exit-status '([.[0][].severity] | unique) - ([.[1][].severity] | un
 
 jq --raw-output '"jsonpHelper(\(.));"' severity_index.json > jsonp_severity_index.json
 
-# The newly generated file doesn't have any line breaks, but I can
-# format it with uglifyjs in order to visually check that I've got the
-# right data:
+# The newly generated file doesn't have any line breaks --- it is
+# already minified and ready to serve over http. Now ANY host I choose
+# can serve this JSONp response along with JavaScript code above; and
+# my data can be loaded into ANY client-side process running in the
+# browser!
 #
-#    $ cat jsonp_severity_index.json | uglifyjs -b
+# Although everything-on-one-line formatting is useful for Web
+# servers, it does make it hard to read the generated code!
+# Optionally I can prettify the generated JSONp code with uglifyjs,
+# resulting human-readable JavaScript that I can visually verify has
+# got the right data:
+
+cat jsonp_severity_index.json | uglifyjs -b
+
 #    jsonpHelper([ {
 #        severity: "[DEBUG]",
 #        message: "foo"
@@ -465,6 +515,3 @@ jq --raw-output '"jsonpHelper(\(.));"' severity_index.json > jsonp_severity_inde
 #        message: "boz"
 #    } ]);
 #
-# Now I can serve the file jsonp_severity_index.json over http from
-# ANY host, and use the JavaScript code above to load it into ANY
-# client-side process running in the browser!
