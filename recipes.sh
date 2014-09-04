@@ -378,7 +378,7 @@ jq '.missing | length | "\(.) keys were not found."' an_actual_diff.json
 # and mobile applications expose their API data --- making a curl
 # request is just the tip of the iceberg! Other options include HAR
 # capture with Chrome Inspector, network traffic inspection via
-# Charles or WireShark and  investigation of json documents
+# Charles or WireShark and  investigation of JSON documents
 # cached in your browser / filesystem.
 #
 # In any case, the larger point is that comparing JSON documents and
@@ -392,9 +392,20 @@ jq '.missing | length | "\(.) keys were not found."' an_actual_diff.json
 # the same API: "foohost/v1/severity_index" and
 # "barhost/v2/severity_index" for the sake of pretending =D
 #
-# Anyhow, back to looking at the useful comparisons that jq can
-# perform against two JSON documents that (should) have commonalities
-# with regard to structure.
+# So in this imaginary API test scenario I would first go through the
+# one-time step of retrieving the remote responses and saving them to
+# files, something like:
+#
+#     curl foohost/v1/severity_index > severity_index.json
+#     curl barhost/v2/severity_index > advanced_comparison.json
+#
+# Then the two API responses are saved in two files, and I can compare
+# the two files as just I have been doing above
+#
+# Now back to looking at the useful comparisons that jq can perform
+# against two JSON documents that (should) have commonalities with
+# regard to structure --- such as two "identical" responses from two
+# different implementations of the same application server!
 #
 # The first snag one is likely to run into in data testing is... data
 # dependencies that result in fragile tests. An API smoke
@@ -408,17 +419,7 @@ jq '.missing | length | "\(.) keys were not found."' an_actual_diff.json
 # matches the API specification.
 #
 # Here's an example of how to "diff" the top-level keys in a JSON
-# document, ignoring the values of those keys.
-#
-# And just to be clear --- in a REAL test scenario I would first
-# actually retrieve the remote responses and save them to files before
-# performing the comparison:
-#
-#     curl foohost/v1/severity_index > severity_index.json
-#     curl barhost/v2/severity_index > advanced_comparison.json
-#
-# Then the two API responses are saved in two files, and I can compare
-# the two files as just I have been doing above:
+# document, ignoring the values of those keys:
 
 jq --slurp '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique), added_keys: (([.[1][].severity]) - ([.[0][].severity]) | unique)}' severity_index.json advanced_comparison.json
 
