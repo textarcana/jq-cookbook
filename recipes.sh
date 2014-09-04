@@ -50,15 +50,13 @@ echo "[DEBUG] foo
 # plain text file. So I can save myself some coding time later by
 # performing this one-time transformation on my log data right now!
 
-jq --slurp --raw-input --raw-output \
-    'split("\n") | .' \
-    example.log > log_lines.json
+jq --slurp --raw-input --raw-output 'split("\n") | .' example.log > log_lines.json
 
 # That command created a new file: log_lines.json which contains the
 # same information as our original log, but formatted as a JSON array
 # ready for loading into ANY programmatic environment.
 #
-#    $ cat log_lines.json
+#    $ jq . log_lines.json
 #    [
 #      "[DEBUG] foo",
 #      "[ERROR] bar",
@@ -71,21 +69,6 @@ jq --slurp --raw-input --raw-output \
 # you (the reader) are definitely working with the exact same data
 # set. This confidence in consistency is an invaluable advantage when
 # learning the fundamentals of a Turing-complete DSL like jq!
-#
-# With regard to data integrity, I will also point out that one can
-# optionally use jsonlint to validate the result of any jq transform
-# was successful.
-
-jsonlint -q log_lines.json
-
-# However, it's worth noting that by default jq CAN NOT output invalid
-# JSON. The output from jq is always serialized directly into JSON
-# from an object in memory.
-#
-# In other words: jq never "just prints" a JSON string. Rather, jq
-# ALWAYS validates all JSON before attempting to print it out. JSON
-# that cannot be validated causes jq to print nothing and exit with an
-# error!
 
 
 
@@ -108,13 +91,12 @@ jsonlint -q log_lines.json
 # many and what kind of errors are in this log? So I'll do that
 # analysis now on my toy data set...
 
-jq 'map(split(" ") | {severity: "\(.[0])", message: "\(.[1])"})' \
-    log_lines.json > severity_index.json
+jq 'map(split(" ") | {severity: "\(.[0])", message: "\(.[1])"})' log_lines.json > severity_index.json
 
 # I've now created a new file: severity_index.json, which contains an
 # array of hashes. Each hash has two keys: severity and message.
 #
-#     $ cat severity_index.json
+#     $ jq . severity_index.json
 #     [
 #       {
 #         "severity": "[DEBUG]",
@@ -137,14 +119,13 @@ jq 'map(split(" ") | {severity: "\(.[0])", message: "\(.[1])"})' \
 # Now if I want a count of log lines by severity, I can use the
 # following expression:
 
-jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' \
-    severity_index.json > totals.json
+jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' severity_index.json > totals.json
 
 # Now the output at this point is JSON but I could be terser if I just
 # wanted human-readable output. jq provides a LOT of control over
 # output formats!
 #
-#     $ cat totals.json
+#     $ jq . totals.json
 #     [
 #       {
 #         "[DEBUG]": 1
@@ -164,9 +145,7 @@ jq 'group_by(.severity) | map({"\(.[0].severity)" : length})' \
 # the screen. This is helpful when formatting data for humans to
 # read.
 
-jq -r \
-    'group_by(.severity) | map("\(length) \(.[0].severity)") | .[]' \
-    severity_index.json > totals.txt
+jq -r 'group_by(.severity) | map("\(length) \(.[0].severity)") | .[]' severity_index.json > totals.txt
 
 # Note that totals.txt is suitable for including in an email or
 # echo'ing into an IRC chat room.
@@ -207,8 +186,7 @@ jq -r \
 # First I will create a second data set containing only the non-error
 # lines from my original example.log file:
 
-jq 'map(select(.severity != "[ERROR]")) | sort' \
-    severity_index.json > for_comparison.json
+jq 'map(select(.severity != "[ERROR]")) | sort' severity_index.json > for_comparison.json
 
 # I've sorted the keys in the second data set just to make the point
 # that using the diff command isn't that useful when dealing with JSON
@@ -217,7 +195,7 @@ jq 'map(select(.severity != "[ERROR]")) | sort' \
 # Anyway, here is the file I will be using for comparison with my
 # existing severity_index.json data set:
 #
-#     $ cat for_comparison.json
+#     $ jq . for_comparison.json
 #     [
 #       {
 #         "severity": "[DEBUG]",
@@ -232,9 +210,7 @@ jq 'map(select(.severity != "[ERROR]")) | sort' \
 # The simplest test I'd ever want to perform is just finding out if
 # two data sets are the same. Here's how jq lets me do that:
 
-jq --slurp --exit-status \
-    '.[0] == .[1]' \
-    severity_index.json for_comparison.json
+jq --slurp --exit-status '.[0] == .[1]' severity_index.json for_comparison.json
 
 # Note the use of the --exit-status flag, which tells jq to return a
 # bad exit status if my equality test returns false. With the
@@ -247,9 +223,7 @@ jq --slurp --exit-status \
 # I can figure out which keys are in the first document but not in the
 # second document by using the subtraction operator:
 
-jq --slurp --exit-status \
-    '.[0] - .[1]' \
-    severity_index.json for_comparison.json
+jq --slurp --exit-status '.[0] - .[1]' severity_index.json for_comparison.json
 
 # This lists out only the error keys, since those are the keys that I
 # previously filtered out of the for_comparison.json document.
@@ -260,8 +234,7 @@ jq --slurp --exit-status \
 #
 # Adding new entries to existing JSON documents works like this in jq:
 
-jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' \
-    for_comparison.json > advanced_comparison.json
+jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' for_comparison.json > advanced_comparison.json
 
 # I'm choosing to prepend to the data set here because I want to drive
 # home my point about diff not being a good tool for this sort of
@@ -275,9 +248,7 @@ jq '[{severity: "[DEBUG]", message: "hello world!"}] + .' \
 # produce a third JSON document showing the difference between the two
 # documents under comparison, I can do that like so:
 
-jq --slurp \
-    '{missing: (.[0] - .[1]), added: (.[1] - .[0])}' \
-    severity_index.json advanced_comparison.json > an_actual_diff.json
+jq --slurp '{missing: (.[0] - .[1]), added: (.[1] - .[0])}' severity_index.json advanced_comparison.json > an_actual_diff.json
 
 # Now I have created a new file: an_actual_diff.json. It contains a
 # JSON object with two keys: "missing" and "added." Just like a diff!
@@ -306,9 +277,7 @@ jq --slurp \
 # say how many keys present in the original file, were missing from
 # the comparison file:
 
-jq \
-    '.missing | length | "\(.) keys were not found."' \
-    an_actual_diff.json
+jq '.missing | length | "\(.) keys were not found."' an_actual_diff.json
 
 # This should give you output like "2 keys were not found." Again,
 # this sort of output is perfect for echo'ing into a chatroom or
@@ -386,19 +355,14 @@ jq \
 # Then the two API responses are saved in two files, and I can compare
 # the two files as just I have been doing above:
 
-jq --slurp \
-    '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique),
-        added_keys: (([.[1][].severity]) - ([.[0][].severity]) | unique)}' \
-    severity_index.json advanced_comparison.json
+jq --slurp '{missing_keys: (([.[0][].severity]) - ([.[1][].severity]) | unique), added_keys: (([.[1][].severity]) - ([.[0][].severity]) | unique)}' severity_index.json advanced_comparison.json
 
 # And I can turn that into a test that causes Jenkins to fail the
 # build when the file being compared does not use all the same
 # top-level keys as the original file.
 
-jq --slurp --exit-status \
-    '([.[0][].severity] | unique) -
-     ([.[1][].severity] | unique) == []' \
-    severity_index.json advanced_comparison.json
+jq --slurp --exit-status '([.[0][].severity] | unique) - ([.[1][].severity] | unique) == []' severity_index.json advanced_comparison.json
+
 
 
 
@@ -411,7 +375,7 @@ jq --slurp --exit-status \
 # | |__| |____) | |__| | |\  | |_) |  \ V  V /| | |_| | | |   | | (_| |
 #  \____/|_____/ \____/|_| \_| .__/    \_/\_/ |_|\__|_| |_|   | |\__, |
 #                            | |                             _/ |   | |
-#                            |_|                            |__/    |_|
+#                            |_|                            |__/ |_|
 #
 # In order to serve JSON documents to client-side JavaScript
 # applications, it is convenient to be able to transfer documents
@@ -456,9 +420,7 @@ jq --slurp --exit-status \
 # Here is how I would go about crafting a JSONp response whose payload
 # is the severity_index.json file I generated, above.
 
-jq --raw-output \
-    '"jsonpHelper(\(.));"' \
-    severity_index.json > jsonp_severity_index.json
+jq --raw-output '"jsonpHelper(\(.));"' severity_index.json > jsonp_severity_index.json
 
 # The newly generated file doesn't have any line breaks, but I can
 # format it with uglifyjs in order to visually check that I've got the
