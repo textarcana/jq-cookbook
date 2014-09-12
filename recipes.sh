@@ -516,3 +516,91 @@ cat jsonp_severity_index.json | uglifyjs -b
 #        message: "boz"
 #    } ]);
 #
+
+
+
+
+# Schema Validation
+#   _____        _
+#  / ____|      | |
+# | (___    ___ | |__    ___  _ __ ___    __ _
+#  \___ \  / __|| '_ \  / _ \| '_ ` _ \  / _` |
+#  ____) || (__ | | | ||  __/| | | | | || (_| |
+# |_____/  \___||_| |_| \___||_| |_| |_| \__,_|
+#
+#
+# __      __     _  _      _         _    _
+# \ \    / /    | |(_)    | |       | |  (_)
+#  \ \  / /__ _ | | _   __| |  __ _ | |_  _   ___   _ __
+#   \ \/ // _` || || | / _` | / _` || __|| | / _ \ | '_ \
+#    \  /| (_| || || || (_| || (_| || |_ | || (_) || | | |
+#     \/  \__,_||_||_| \__,_| \__,_| \__||_| \___/ |_| |_|
+#
+# Here is a recipe that dumps the schemas (as determined by jq) from a
+# JSON document.
+#
+# I have formatted the schemas as valid jq queries, so that I can feed
+# them back into my test harness easily.
+
+jq --raw-output 'paths | map(. as $item | type | if  . == "number" then "[\($item)]" else "[\"" + $item + "\"]" end) | join("") | "." + .' severity_index.json > schema_dump.json
+
+# The output from this command is a list of all the jq queries which
+# are valid against the current document:
+
+cat schema_dump.json
+
+# Should produce output like this:
+#
+#    .[0]
+#    .[0]["severity"]
+#    .[0]["message"]
+#    .[1]
+#    .[1]["severity"]
+#    .[1]["message"]
+#    .[2]
+#    .[2]["severity"]
+#    .[2]["message"]
+#    .[3]
+#    .[3]["severity"]
+#    .[3]["message"]
+#
+# This is a very general schema because it doesn't specify the types
+# (or any characteristics) of the data *in* the fields. But since I
+# have this list of all possible queries against my document, I can
+# use that list to generate a script that will drill down to each end
+# node in the document, producing a record of the current value of
+# each node.
+
+jq -R -r '. + " | type" | @sh "jq \(.) severity_index.json" | .' schema_dump.json > get_types.sh
+
+# Now get_types.sh is a runnable set of jq queries that will produce
+# the type of each field for every path in the schema dump!
+
+sh get_types.sh > schema_types.txt
+
+jq -s '.' schema_types.txt > schema_types.json
+jq -s --raw-input 'split("\n")' schema_dump.json > clean_schema_dump.json
+
+# Now I can create a config file off which I can generate the
+# validation script:
+
+jq -s --raw-output '.[][] | @sh' schema_types.json > clean_schema_types.txt
+jq -s --raw-output '.[][] | @sh' clean_schema_dump.json > clean_schema_dump.txt
+
+paste -d' ' clean_schema_dump.txt  clean_schema_types.txt > detailed_schemas.txt
+
+# At this point I have a pretty complete schema specification. It
+# would be helpful if the specification were organized as highly
+# structured data. Here's how I would structure it:
+
+perl -lwpe "s{' '}{ | type == \"}; s{'$}{\"'}; s{^(.*)$}{jq \$1 severity_index.json}" detailed_schemas.txt > validation.sh
+
+# Now validation.sh is an explicit set of automated checks for fields
+# and data types of fields.
+#
+# There is more that could be done in the way of validation. The first
+# thing I want at this point is a way to limit the depth of the tree I
+# am validating. Just because an API returns a bazillion levels of
+# hierarchy shouldn't mean I have to test all of them!
+#
+# Probably I can use the jq path command to do that...
