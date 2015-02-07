@@ -8,7 +8,7 @@
     |__/    |_|
 
 
-Noah Sussman's jq Cookbook
+Sophisticated, practical examples of using `jq` to build ETLs in the Real World
 ===========
 
 How to use jq, [the command-line JSON processor.](http://stedolan.github.io/jq/)
